@@ -3,7 +3,7 @@
  * 优先级：环境变量 > .env 文件 > 默认值
  *
  * 用法：在项目根目录复制 .env.example 为 .env 后按需修改；
- * 或直接设置系统环境变量（Docker 部署时用 -e 传入）。
+ * 或直接设置系统环境变量。
  */
 const fs = require('fs');
 const path = require('path');

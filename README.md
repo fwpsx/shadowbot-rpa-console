@@ -37,10 +37,7 @@
 │   ├── index.html         # 页面骨架
 │   ├── style.css          # 样式
 │   └── app.js             # 前端逻辑
-├── Dockerfile             # 可选 Docker 部署
-├── docker-compose.yml     # 可选 Docker Compose
 ├── start.bat / stop.bat   # Windows 一键启停
-├── start.sh / stop.sh     # Linux/Mac 一键启停
 └── backups/               # 触发器备份目录（已被 .gitignore 排除）
 ```
 
@@ -52,18 +49,10 @@
 - `shadowbot.shell-cli.exe` 在 PATH 中（默认随客户端附带）
 - Node.js ≥ 16（无需任何 npm 依赖）
 
-### 方式一：一键脚本（推荐）
+### 方式一：一键脚本（推荐，Windows）
 
-**Windows**：
 - 启动：双击 `start.bat`
 - 停止：双击 `stop.bat`
-
-**Linux / Mac**：
-```bash
-chmod +x start.sh stop.sh
-./start.sh          # 启动
-./stop.sh           # 停止
-```
 
 ### 方式二：命令行
 
@@ -74,16 +63,6 @@ npm start
 ```
 
 访问 `http://127.0.0.1:18923`（局域网访问地址会在页面侧边栏和仪表盘显示）。
-
-### 方式三：Docker（可选）
-
-> ⚠️ 说明：影刀客户端（CLI 与本地 REST API 42500）运行在 Windows 宿主机且仅监听 127.0.0.1，
-> 容器内无法直接访问。Docker 方式主要用于统一运行环境/简化分发的场景，
-> 一般建议直接在 Windows 宿主机运行。
-
-```bash
-docker compose up -d --build
-```
 
 ## 配置
 
@@ -99,7 +78,7 @@ docker compose up -d --build
 | `BACKUP_DIR` | 项目下 `backups/` | 备份存储目录 |
 | `REST_HOST` / `REST_PORT` | `127.0.0.1` / `42500` | 影刀本地 REST API |
 
-也可通过环境变量直接设置（Docker 用 `-e` 传入）。
+也可通过环境变量直接设置。
 
 ## 触发器迁移工作流
 
