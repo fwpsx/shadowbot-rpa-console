@@ -138,23 +138,6 @@ docker compose up -d --build
 | POST | `/api/migration/match` | 名称匹配 |
 | POST | `/api/migration/import` | 导入（支持 dry-run） |
 
-## 上传到 GitHub（脱敏检查清单）
-
-本项目已做好脱敏准备，上传前请确认：
-
-- [x] `.gitignore` 已排除 `.env`、`backups/`、`node_modules/` 等敏感/运行时文件
-- [x] 代码中无硬编码密码、Token、授权码（授权码仅在浏览器运行时输入，不落盘）
-- [x] `.env.example` 仅提供模板，不含真实配置
-- [ ] **手动检查**：`backups/` 目录内如有含账号名的备份文件，确认已通过 `.gitignore` 排除（不会被提交）
-
-```bash
-git init
-git add .
-git commit -m "feat: 影刀 RPA 网页控制台"
-git branch -M main
-git remote add origin <你的仓库地址>
-git push -u origin main
-```
 
 ## License
 
