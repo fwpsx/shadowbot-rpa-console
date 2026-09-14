@@ -41,7 +41,17 @@
 ├── public/
 │   ├── index.html         # 页面骨架
 │   ├── style.css          # 样式
-│   └── app.js             # 前端逻辑
+│   └── js/                # 前端逻辑（ES Modules）
+│       ├── main.js        # 入口（副作用引入各页面并启动）
+│       ├── router.js      # 全局状态 + 页面注册表 + 导航
+│       ├── utils.js       # DOM/UI/格式化工具
+│       ├── api.js         # fetch/CLI 封装 + 访问令牌
+│       ├── constants.js   # 常量与图标
+│       ├── account.js     # 账号列表（分页 + 搜索）
+│       └── pages/         # 各功能页面模块
+│           ├── dashboard.js / apps.js / tasks.js / triggers.js
+│           ├── migration.js / groupSync.js
+│           └── messages.js / extensions.js / settings.js
 ├── start.bat / stop.bat   # Windows 一键启停
 └── backups/               # 触发器备份目录（已被 .gitignore 排除）
 ```
@@ -79,6 +89,8 @@ npm start
 |------|--------|------|
 | `PORT` | `18923` | 监听端口 |
 | `HOST` | `0.0.0.0` | `0.0.0.0` 局域网可访问，`127.0.0.1` 仅本机 |
+| `AUTH_USER` | `admin` | 控制台登录账号 |
+| `AUTH_PASS` | 留空（不启用） | 控制台登录密码，设置后需账号密码登录 |
 | `CLI_EXE` | 自动探测 | CLI 可执行文件（自动解析为安装目录下的绝对路径） |
 | `CLI_CWD` | 自动探测 | 影刀安装目录（自动定位，无需手填） |
 | `SCREENCAST_DIR` | 自动探测 | 视频回放目录（默认「安装目录\screencast」） |
@@ -105,6 +117,21 @@ SCREENCAST_DIR=E:\MyTools\ShadowBot\screencast
 3. 重新启动服务
 
 > 如何找到影刀安装目录：右键桌面/开始菜单的影刀快捷方式 →「打开文件所在位置」，找到 `shadowbot.shell-cli.exe` 所在目录即可。
+
+### 访问鉴权（账号密码登录，局域网部署建议开启）
+
+默认 `HOST=0.0.0.0` 意味着**局域网内任何设备都能访问并操作**本控制台（含账号切换、触发器迁移等写操作）。若需在多设备局域网环境使用，建议开启账号密码登录：
+
+1. 在 `.env` 中设置登录账号和密码：
+
+```ini
+AUTH_USER=admin
+AUTH_PASS=请改成你的密码
+```
+
+2. 重启服务后，浏览器首次访问会弹出「登录」框，输入账号密码后自动记住（存于浏览器 `localStorage`），后续无需重复登录。
+
+> 说明：这是**简单访问控制**（单管理员账号），用于防止局域网内的误操作，并非专业安全方案（密码明文存于 `.env`，令牌经本地 HTTP 明文传输，不防中间人）。仅本机使用时可保持 `AUTH_PASS` 留空。
 
 ## 触发器迁移工作流
 
