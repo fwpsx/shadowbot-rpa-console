@@ -1,0 +1,20 @@
+# 影刀 RPA 控制台 — Docker Compose（可选方案）
+#
+# 使用：docker compose up -d
+# 详见 README「Docker 部署」章节的说明与限制。
+
+services:
+  rpa-console:
+    build: .
+    container_name: rpa-console
+    ports:
+      - "${PORT:-18923}:${PORT:-18923}"
+    environment:
+      PORT: ${PORT:-18923}
+      HOST: 0.0.0.0
+      # 影刀 CLI / REST 相关配置（Linux 容器内无法访问宿主机 Windows 的 127.0.0.1，
+      # 需根据实际部署拓扑调整，见 README）
+      # CLI_EXE: shadowbot.shell-cli.exe
+      # CLI_CWD: /app
+      # REST_HOST: host.docker.internal
+    restart: unless-stopped
