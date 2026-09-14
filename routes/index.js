@@ -9,10 +9,12 @@ const apps = require('./apps');
 const tasks = require('./tasks');
 const auth = require('./auth');
 const migration = require('./migration');
+const groupSync = require('./groupSync');
 
 // 顺序敏感：更具体的正则路由放在前面，静态路由放后面兜底
 const allRoutes = [
   ...migration.routes,
+  ...groupSync.routes,
   ...auth.routes,
   ...tasks.routes,
   ...apps.routes,

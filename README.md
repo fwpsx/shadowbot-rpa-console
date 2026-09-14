@@ -11,6 +11,7 @@
 | 任务管理 | 历史记录、状态筛选、日志查看、视频回放、停止/重跑 |
 | 触发器管理 | 全部/定时/邮件/文件夹/热键分类、启用/禁用开关、新增/编辑/删除 |
 | 触发器迁移 | 跨账号导出 → 名称匹配 → 人工映射兜底 → dry-run 预览 → 批量导入 |
+| 分组同步 | 跨账号导出分组 → 切换账号 → 匹配确认 → 创建缺失分组并归组应用（支持仅同步指定分组名） |
 | 消息中心 | 已读/未读、标记已读、全部已读 |
 | 扩展管理 | 扩展列表与安装状态 |
 | 系统设置 | 配置管理、console/assistant 模式切换 |
@@ -32,7 +33,8 @@
 │   ├── apps.js            # 应用
 │   ├── tasks.js           # 任务/日志/视频
 │   ├── auth.js            # 账号
-│   └── migration.js       # 触发器迁移
+│   ├── migration.js       # 触发器迁移
+│   └── groupSync.js       # 分组同步
 ├── public/
 │   ├── index.html         # 页面骨架
 │   ├── style.css          # 样式
@@ -116,6 +118,12 @@ npm start
 | POST | `/api/migration/backups/upload` | 上传备份文件 |
 | POST | `/api/migration/match` | 名称匹配 |
 | POST | `/api/migration/import` | 导入（支持 dry-run） |
+| POST | `/api/group-sync/export` | 导出当前账号分组结构 |
+| GET | `/api/group-sync/backups` | 列出分组备份文件 |
+| POST | `/api/group-sync/backups/delete` | 删除分组备份文件 |
+| POST | `/api/group-sync/backups/upload` | 上传分组备份文件 |
+| POST | `/api/group-sync/match` | 分组匹配（支持 onlyGroups 仅同步指定分组） |
+| POST | `/api/group-sync/import` | 执行分组同步（支持 dry-run） |
 
 
 ## License
