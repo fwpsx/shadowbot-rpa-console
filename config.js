@@ -85,13 +85,15 @@ module.exports = {
   // 目录
   HTML_PATH: path.join(__dirname, 'public', 'index.html'),
   BACKUP_DIR: env('BACKUP_DIR', path.join(__dirname, 'backups')),
-  // 视频回放目录：优先显式配置；否则用「安装目录\screencast」；探测不到回退旧默认
-  SCREENCAST_DIR: env('SCREENCAST_DIR', path.join(shadowBotDir || 'D:\\ShadowBot', 'screencast')),
+  // 视频回放目录：优先显式配置；否则用「安装目录\screencast」；探测不到为空
+  SCREENCAST_DIR: env('SCREENCAST_DIR', shadowBotDir ? path.join(shadowBotDir, 'screencast') : ''),
 
   // 影刀 CLI
   CLI_EXE: cliExe,
-  CLI_CWD: env('CLI_CWD', shadowBotDir || 'D:\\ShadowBot'),
+  CLI_CWD: env('CLI_CWD', shadowBotDir || ''),
   CLI_TIMEOUT: envInt('CLI_TIMEOUT', 120000),
+  // 探测到的影刀安装目录（可能为 null，供启动时校验提示）
+  SHADOWBOT_DIR: shadowBotDir,
 
   // 影刀本地 REST API（仅本机 127.0.0.1，通常无需修改）
   REST_HOST: env('REST_HOST', '127.0.0.1'),

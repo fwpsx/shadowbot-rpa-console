@@ -8,6 +8,7 @@
  * 配置：复制 .env.example 为 .env 后按需修改，或设置环境变量。
  */
 const http = require('http');
+const path = require('path');
 const config = require('./config');
 const { dispatch } = require('./routes');
 const { sendJson } = require('./lib/utils');
@@ -45,4 +46,15 @@ server.listen(config.PORT, config.HOST, () => {
   console.log(`  视频目录: ${config.SCREENCAST_DIR}`);
   console.log('  停止服务: Ctrl+C');
   console.log('===========================================');
+
+  // 影刀 CLI 未自动探测到、且未手动配置时的提示
+  if (!path.isAbsolute(config.CLI_EXE)) {
+    console.log('');
+    console.log('  [警告] 未自动探测到影刀安装目录，且未手动配置 CLI_EXE/CLI_CWD。');
+    console.log('         影刀 CLI 相关功能可能无法使用。');
+    console.log('         请复制 .env.example 为 .env，并手动设置：');
+    console.log('           CLI_EXE=D:\\你的影刀安装目录\\shadowbot.shell-cli.exe');
+    console.log('           CLI_CWD=D:\\你的影刀安装目录');
+    console.log('');
+  }
 });
