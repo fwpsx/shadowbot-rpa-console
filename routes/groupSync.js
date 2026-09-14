@@ -8,10 +8,11 @@ const { sendJson, readBody, ensureDir } = require('../lib/utils');
 const { exportGroups, matchGroups, importGroups } = require('../lib/business');
 
 const routes = [
-  // 导出当前账号的分组结构（分组 + 分组内应用）
+  // 导出当前账号的分组结构（分组 + 分组内应用），可传 onlyGroups 仅导出指定分组
   {
     method: 'POST', pattern: /^\/api\/group-sync\/export$/, handler: async (req, res) => {
-      const r = await exportGroups();
+      const body = JSON.parse(await readBody(req) || '{}');
+      const r = await exportGroups(body.onlyGroups);
       sendJson(res, 200, r);
     },
   },

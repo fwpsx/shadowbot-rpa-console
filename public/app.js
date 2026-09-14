@@ -259,6 +259,103 @@ function btnLoading(btn, loading, text) {
 }
 
 /* ============================================================
+ * 账号列表（带分页 + 模糊搜索，迁移/分组同步步骤2共用）
+ * ============================================================ */
+// 渲染账号列表到 container，支持分页与搜索。
+// opts: { onSwitch(uname), isCurrent(uname), pageSize? }
+async function renderAccountList(container, opts) {
+  container.innerHTML = '';
+  opts = opts || {};
+  const PAGE_SIZE = opts.pageSize || 8;
+  let accounts = [];
+  let query = '';
+
+  // 搜索框
+  const searchRow = el('div', { style: 'display:flex;gap:8px;align-items:center;margin-bottom:10px' });
+  const searchInp = el('input', { class: 'input', style: 'flex:1', placeholder: '搜索账号名 / 显示名（模糊匹配）…' });
+  const clearBtn = el('button', { class: 'btn btn-ghost btn-sm' }, '清空');
+  searchRow.appendChild(searchInp);
+  searchRow.appendChild(clearBtn);
+  container.appendChild(searchRow);
+
+  // 列表容器 + 分页容器
+  const listBox = el('div', {});
+  const pagerBox = el('div', {});
+  container.appendChild(listBox);
+  container.appendChild(pagerBox);
+
+  // 加载账号列表
+  try {
+    const r = await cli(['auth', 'account', 'list']);
+    const list = (r.data && (r.data.items || r.data.accounts || r.data)) || [];
+    accounts = Array.isArray(list) ? list : [];
+  } catch (e) {
+    listBox.appendChild(el('p', { style: 'font-size:12.5px;color:var(--faint)' }, '账号列表获取失败: ' + e.message));
+    return;
+  }
+  if (!accounts.length) {
+    listBox.appendChild(el('p', { style: 'font-size:12.5px;color:var(--faint)' }, '（没有记住的账号，请在影刀客户端手动切换）'));
+    return;
+  }
+
+  function matches(a, q) {
+    if (!q) return true;
+    const name = String(a.name || '');
+    const disp = String(a.displayName || '');
+    const ql = q.toLowerCase();
+    return name.toLowerCase().includes(ql) || disp.toLowerCase().includes(ql);
+  }
+
+  function render() {
+    listBox.innerHTML = '';
+    pagerBox.innerHTML = '';
+    const filtered = accounts.filter((a) => matches(a, query));
+    if (!filtered.length) {
+      listBox.appendChild(el('p', { style: 'font-size:12.5px;color:var(--faint)' }, `（没有匹配「${query}」的账号）`));
+      return;
+    }
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    let cur = (render._cur || 1);
+    if (cur > totalPages) cur = totalPages;
+    render._cur = cur;
+    const start = (cur - 1) * PAGE_SIZE;
+    const pageItems = filtered.slice(start, start + PAGE_SIZE);
+
+    pageItems.forEach((a) => {
+      const name = String(a.name || '');
+      const disp = String(a.displayName || '');
+      const ent = String(a.enterpriseName || '');
+      const isCur = typeof opts.isCurrent === 'function' ? opts.isCurrent(name) : false;
+      const label = disp && disp !== name ? `${name}（${disp}）` : name;
+      const sub = ent ? ` · ${ent}` : (a.hasSavedPassword ? ' · 免密' : '');
+      const item = el('div', { class: 'acc-item fade-item' + (isCur ? ' current' : '') },
+        el('div', {},
+          el('div', { style: 'font-size:13px;font-weight:500' }, label),
+          el('div', { style: 'font-size:11px;color:var(--faint);margin-top:2px' },
+            sub + (a.autoLogin ? ' · 自动登录' : '')),
+          isCur ? el('span', { class: 'badge ok plain', style: 'font-size:10.5px' }, '当前') : null),
+        isCur ? null : el('button', { class: 'btn btn-ghost btn-sm', onclick: (e) => opts.onSwitch && opts.onSwitch(name, e) }, '切换'),
+      );
+      listBox.appendChild(item);
+    });
+    stagger(listBox);
+
+    if (total > PAGE_SIZE) {
+      pagerBox.appendChild(renderPager({
+        curPage: cur, total, pageSize: PAGE_SIZE,
+        onPage: (p) => { render._cur = p; render(); },
+        onSize: (s) => { PAGE_SIZE = s; render._cur = 1; render(); },
+      }));
+    }
+  }
+
+  searchInp.addEventListener('input', () => { query = searchInp.value.trim(); render._cur = 1; render(); });
+  clearBtn.onclick = () => { searchInp.value = ''; query = ''; render._cur = 1; render(); };
+  render();
+}
+
+/* ============================================================
  * 图标
  * ============================================================ */
 const I = {
@@ -1339,37 +1436,24 @@ async function renderStep2(body) {
   await refreshAccount();
   loadCur();
 
-  // 记住的账号列表
-  try {
-    const r = await cli(['auth', 'account', 'list']);
-    const list = (r.data && (r.data.items || r.data.accounts || r.data)) || [];
-    accListBox.innerHTML = '';
-    const accounts = Array.isArray(list) ? list : [];
-    if (!accounts.length) accListBox.appendChild(el('p', { style: 'font-size:12.5px;color:var(--faint)' }, '（没有记住的账号，请在影刀客户端手动切换）'));
-    accounts.forEach((a) => {
-      const uname = a.userName || a.username || a.name || String(a);
-      const isCur = App.account && App.account.userName === uname;
-      const item = el('div', { class: 'acc-item fade-item' + (isCur ? ' current' : '') },
-        el('div', {}, el('div', { style: 'font-size:13px;font-weight:500' }, uname), isCur ? el('span', { class: 'badge ok plain', style: 'font-size:10.5px' }, '当前') : null),
-        isCur ? null : el('button', { class: 'btn btn-ghost btn-sm', onclick: async (e) => {
-          const ok = await confirmModal('切换账号', `确定要切换到账号「${uname}」吗？将切换本机影刀客户端的登录状态（免密登录）。`, { okText: '切换' });
-          if (!ok) return;
-          btnLoading(e.target, true, '切换中…');
-          try {
-            await api('/api/auth/switch', { method: 'POST', body: JSON.stringify({ username: uname }) });
-            toast('账号已切换', 'ok');
-            await refreshAccount();
-            loadCur();
-            renderStep2(body);
-          } catch (err) { toast('切换失败: ' + err.message, 'fail'); }
-        } }, '切换'),
-      );
-      accListBox.appendChild(item);
-    });
-    stagger(accListBox);
-  } catch (e) {
-    accListBox.appendChild(el('p', { style: 'font-size:12.5px;color:var(--faint)' }, '账号列表获取失败: ' + e.message));
-  }
+  // 记住的账号列表（分页 + 模糊搜索）
+  await renderAccountList(accListBox, {
+    isCurrent: (name) => App.account && App.account.userName === name,
+    onSwitch: async (uname, e) => {
+      const ok = await confirmModal('切换账号', `确定要切换到账号「${uname}」吗？\n\n将关闭并重启本机影刀客户端，约需 5~15 秒。`, { okText: '切换' });
+      if (!ok) return;
+      btnLoading(e.target, true, '切换中（重启影刀）…');
+      try {
+        const r = await api('/api/auth/switch', { method: 'POST', body: JSON.stringify({ username: uname }) });
+        if (r.blocked) { btnLoading(e.target, false); toast(r.error || '当前影刀被占用，不允许切换', 'fail'); return; }
+        if (!r.ok) throw new Error(r.error || '切换失败');
+        toast(`已切换到账号「${r.userName || uname}」`, 'ok');
+        await refreshAccount();
+        loadCur();
+        renderStep2(body);
+      } catch (err) { btnLoading(e.target, false); toast('切换失败: ' + err.message, 'fail'); }
+    },
+  });
 }
 
 /* ---- 步骤 3：匹配确认 ---- */
@@ -1618,20 +1702,37 @@ async function renderGS1(body) {
     const d = r.data || {};
     if (d.loggedIn) {
       accBox.style.display = 'flex';
-      accBox.appendChild(el('span', {}, `ℹ 当前登录账号：${d.displayName || d.userName}（${d.userName}）。点击导出将备份该账号的全部应用分组。`));
+      accBox.appendChild(el('span', {}, `ℹ 当前登录账号：${d.displayName || d.userName}（${d.userName}）。`));
       GroupSync.lastExportAccount = d.userName;
     }
   }).catch(() => {});
 
-  const btnRow = el('div', { style: 'display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px' });
+  // 同步范围配置（放在导出按钮上方，导出时即生效）
+  const scopeBox = el('div', { class: 'mt16' });
+  card.appendChild(el('div', { style: 'font-size:12.5px;color:var(--muted);margin:14px 0 8px' }, '同步范围（可选）：'));
+  const scopeInp = el('input', { class: 'input', style: 'width:100%', placeholder: '仅同步指定分组名称，多个用逗号分隔；留空则同步全部分组' });
+  scopeInp.value = GroupSync.onlyGroups.join(', ');
+  // 实时读取输入框值（input 事件，中文输入法组合输入也能捕获），避免依赖 onchange 失焦触发
+  const readScope = () => {
+    GroupSync.onlyGroups = scopeInp.value.split(/[,，]/).map((s) => s.trim()).filter(Boolean);
+  };
+  scopeInp.addEventListener('input', readScope);
+  scopeInp.addEventListener('change', readScope);
+  scopeBox.appendChild(scopeInp);
+  card.appendChild(scopeBox);
+  card.appendChild(el('div', { style: 'font-size:11.5px;color:var(--faint);margin-top:6px' }, '留空 = 导出并同步全部分组；填写则只导出匹配的分组（创建/复用该分组，并将其应用归入对应分组）。'));
+
+  const btnRow = el('div', { style: 'display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 18px' });
   const exportBtn = el('button', { class: 'btn btn-primary', html: I.download + '导出当前账号分组' });
   exportBtn.onclick = async () => {
+    readScope(); // 点击导出时读一次，确保拿到最新输入
     btnLoading(exportBtn, true, '导出中…');
     try {
-      const r = await api('/api/group-sync/export', { method: 'POST' });
+      const r = await api('/api/group-sync/export', { method: 'POST', body: JSON.stringify({ onlyGroups: GroupSync.onlyGroups }) });
       if (!r.ok) throw new Error(r.error || '导出失败');
       GroupSync.backupFile = r.file;
-      toast(`已导出 ${r.count} 个分组 → ${r.file}`, 'ok');
+      const ungrouped = r.ungroupedAppCount ? `（未分组应用 ${r.ungroupedAppCount} 个，不同步）` : '';
+      toast(`已导出 ${r.count} 个分组${ungrouped} → ${r.file}`, 'ok');
       loadBackups();
     } catch (e) { toast('导出失败: ' + e.message, 'fail'); }
     btnLoading(exportBtn, false);
@@ -1702,20 +1803,11 @@ async function renderGS1(body) {
 
   loadBackups();
 
-  // 分组范围配置（可选，仅同步指定分组名）
-  const scopeBox = el('div', { class: 'mt16' });
-  card.appendChild(el('div', { style: 'font-size:12.5px;color:var(--muted);margin:16px 0 8px' }, '同步范围（可选）：'));
-  const scopeInp = el('input', { class: 'input', style: 'width:100%', placeholder: '仅同步指定分组名称，多个用逗号分隔；留空则同步全部分组' });
-  scopeInp.value = GroupSync.onlyGroups.join(', ');
-  scopeInp.onchange = () => {
-    GroupSync.onlyGroups = scopeInp.value.split(/[,，]/).map((s) => s.trim()).filter(Boolean);
-  };
-  scopeBox.appendChild(scopeInp);
-  card.appendChild(scopeBox);
-  card.appendChild(el('div', { style: 'font-size:11.5px;color:var(--faint);margin-top:6px' }, '留空 = 同步全部应用分组名称；填写则只同步匹配的分组（创建/复用该分组，并将其应用归入对应分组）。'));
-
   const nextBtn = el('button', { class: 'btn btn-primary mt16' }, '下一步：切换账号 →');
-  nextBtn.onclick = () => { if (!GroupSync.backupFile) { toast('请先选择一个分组备份文件', 'fail'); return; } GroupSync.step = 2; navigate('groupsync'); };
+  nextBtn.onclick = () => {
+    if (!GroupSync.backupFile) { toast('请先选择一个分组备份文件', 'fail'); return; }
+    GroupSync.step = 2; navigate('groupsync');
+  };
   card.appendChild(nextBtn);
 }
 
@@ -1768,36 +1860,24 @@ async function renderGS2(body) {
   await refreshAccount();
   loadCur();
 
-  try {
-    const r = await cli(['auth', 'account', 'list']);
-    const list = (r.data && (r.data.items || r.data.accounts || r.data)) || [];
-    accListBox.innerHTML = '';
-    const accounts = Array.isArray(list) ? list : [];
-    if (!accounts.length) accListBox.appendChild(el('p', { style: 'font-size:12.5px;color:var(--faint)' }, '（没有记住的账号，请在影刀客户端手动切换）'));
-    accounts.forEach((a) => {
-      const uname = a.userName || a.username || a.name || String(a);
-      const isCur = App.account && App.account.userName === uname;
-      const item = el('div', { class: 'acc-item fade-item' + (isCur ? ' current' : '') },
-        el('div', {}, el('div', { style: 'font-size:13px;font-weight:500' }, uname), isCur ? el('span', { class: 'badge ok plain', style: 'font-size:10.5px' }, '当前') : null),
-        isCur ? null : el('button', { class: 'btn btn-ghost btn-sm', onclick: async (e) => {
-          const ok = await confirmModal('切换账号', `确定要切换到账号「${uname}」吗？将切换本机影刀客户端的登录状态（免密登录）。`, { okText: '切换' });
-          if (!ok) return;
-          btnLoading(e.target, true, '切换中…');
-          try {
-            await api('/api/auth/switch', { method: 'POST', body: JSON.stringify({ username: uname }) });
-            toast('账号已切换', 'ok');
-            await refreshAccount();
-            loadCur();
-            renderGS2(body);
-          } catch (err) { toast('切换失败: ' + err.message, 'fail'); }
-        } }, '切换'),
-      );
-      accListBox.appendChild(item);
-    });
-    stagger(accListBox);
-  } catch (e) {
-    accListBox.appendChild(el('p', { style: 'font-size:12.5px;color:var(--faint)' }, '账号列表获取失败: ' + e.message));
-  }
+  // 记住的账号列表（分页 + 模糊搜索）
+  await renderAccountList(accListBox, {
+    isCurrent: (name) => App.account && App.account.userName === name,
+    onSwitch: async (uname, e) => {
+      const ok = await confirmModal('切换账号', `确定要切换到账号「${uname}」吗？\n\n将关闭并重启本机影刀客户端，约需 5~15 秒。`, { okText: '切换' });
+      if (!ok) return;
+      btnLoading(e.target, true, '切换中（重启影刀）…');
+      try {
+        const r = await api('/api/auth/switch', { method: 'POST', body: JSON.stringify({ username: uname }) });
+        if (r.blocked) { btnLoading(e.target, false); toast(r.error || '当前影刀被占用，不允许切换', 'fail'); return; }
+        if (!r.ok) throw new Error(r.error || '切换失败');
+        toast(`已切换到账号「${r.userName || uname}」`, 'ok');
+        await refreshAccount();
+        loadCur();
+        renderGS2(body);
+      } catch (err) { btnLoading(e.target, false); toast('切换失败: ' + err.message, 'fail'); }
+    },
+  });
 }
 
 /* ---- 步骤 3：确认同步 ---- */
