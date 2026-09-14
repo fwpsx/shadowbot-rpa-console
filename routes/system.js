@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const config = require('../config');
+const auth = require('../lib/auth');
 const { rest, restReady, cachedRest } = require('../lib/rest');
 const { cachedCli, isCacheable, clearCache } = require('../lib/cli');
 const { sendJson, sendFile, getLanIP, readBody } = require('../lib/utils');
@@ -27,13 +28,19 @@ const routes = [
   // 静态首页
   { method: 'GET', pattern: /^\/(?:index\.html)?$/, handler: (req, res) => { sendFile(res, config.HTML_PATH, 'text/html; charset=utf-8'); } },
 
-  // 静态资源（public 目录下的 css/js/图片等）
+  // 静态资源（public 目录下的 css/js/图片等，支持 js/ 及 js/pages/ 子目录）
   {
-    method: 'GET', pattern: /^\/([^/]+\.(?:css|js|json|png|jpe?g|gif|svg|ico))$/, handler: (req, res, m) => {
-      const fileName = path.basename(m[1]); // basename 防路径穿越
-      const filePath = path.join(__dirname, '..', 'public', fileName);
-      if (!fs.existsSync(filePath)) { sendJson(res, 404, { ok: false, error: '静态资源不存在: ' + fileName }); return; }
-      const ext = path.extname(fileName).toLowerCase();
+    method: 'GET', pattern: /^\/([\w\-./]+\.(?:css|js|json|png|jpe?g|gif|svg|ico))$/, handler: (req, res, m) => {
+      const rel = m[1];
+      const publicRoot = path.join(__dirname, '..', 'public');
+      const filePath = path.normalize(path.join(publicRoot, rel));
+      // 防路径穿越：规范化后必须仍在 public 目录内
+      if (!filePath.startsWith(publicRoot + path.sep)) {
+        sendJson(res, 403, { ok: false, error: '非法路径' });
+        return;
+      }
+      if (!fs.existsSync(filePath)) { sendJson(res, 404, { ok: false, error: '静态资源不存在: ' + rel }); return; }
+      const ext = path.extname(rel).toLowerCase();
       sendFile(res, filePath, MIME[ext] || 'application/octet-stream');
     },
   },
@@ -42,6 +49,16 @@ const routes = [
   {
     method: 'GET', pattern: /^\/api\/health$/, handler: (req, res) => {
       sendJson(res, 200, { ok: true, service: 'rpa-console', time: new Date().toISOString(), lanIP: getLanIP(), port: config.PORT });
+    },
+  },
+
+  // 控制台登录（账号 + 密码 → 签发 token）
+  {
+    method: 'POST', pattern: /^\/api\/login$/, handler: async (req, res) => {
+      const body = JSON.parse(await readBody(req));
+      const r = auth.login(body.username, body.password);
+      if (r.ok) sendJson(res, 200, { ok: true, token: r.token, user: body.username });
+      else sendJson(res, 401, { ok: false, error: r.error });
     },
   },
 

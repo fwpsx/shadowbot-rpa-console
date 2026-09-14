@@ -10,6 +10,7 @@
 const http = require('http');
 const path = require('path');
 const config = require('./config');
+const auth = require('./lib/auth');
 const { dispatch } = require('./routes');
 const { sendJson } = require('./lib/utils');
 const { ensureDir, getLanIP } = require('./lib/utils');
@@ -24,6 +25,16 @@ const server = http.createServer(async (req, res) => {
 
   const url = new URL(req.url, `http://${config.HOST}:${config.PORT}`);
   const p = url.pathname;
+
+  // 登录鉴权：启用后 /api/* 请求需携带有效 X-Auth-Token（/api/login 除外）
+  if (auth.enabled() && p.startsWith('/api/') && p !== '/api/login') {
+    const token = req.headers['x-auth-token'];
+    if (!auth.verify(token)) {
+      sendJson(res, 401, { ok: false, error: '未授权：请先登录' });
+      return;
+    }
+  }
+
   try {
     const handled = await dispatch(req, res, p, req.method);
     if (!handled) {

@@ -81,6 +81,13 @@ module.exports = {
   // HTTP 服务
   PORT: envInt('PORT', 18923),
   HOST: env('HOST', '0.0.0.0'),   // 0.0.0.0 监听所有网卡（局域网可访问）；仅本机用 127.0.0.1
+  // 控制台登录账号（单管理员）
+  AUTH_USER: env('AUTH_USER', 'admin'),
+  // 控制台登录密码：留空 = 不启用鉴权（本机单用户场景）；设置后需账号密码登录。
+  // 局域网部署建议设置。密码明文存于 .env（已被 gitignore）。
+  AUTH_PASS: env('AUTH_PASS', ''),
+  // 登录有效期（天），到期后需重新登录
+  AUTH_TTL_DAYS: envInt('AUTH_TTL_DAYS', 7),
 
   // 目录
   HTML_PATH: path.join(__dirname, 'public', 'index.html'),
