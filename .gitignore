@@ -1,0 +1,20 @@
+# ===== 敏感数据（绝不提交） =====
+.env
+backups/
+*.local.json
+
+# ===== 本机运维脚本（含本机特定信息，不提交） =====
+开放防火墙*.bat
+
+# ===== 运行时产物 =====
+node_modules/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# ===== 编辑器 / 系统 =====
+.idea/
+.vscode/
+*.swp
+*.swo
