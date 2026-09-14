@@ -1,0 +1,21 @@
+{
+  "name": "shadowbot-rpa-console",
+  "version": "1.0.0",
+  "description": "影刀 RPA 网页控制台：CLI 代理 + 应用/任务/触发器管理 + 触发器跨账号迁移（零 npm 依赖）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "shadowbot",
+    "rpa",
+    "console",
+    "dashboard",
+    "automation"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "license": "MIT"
+}
