@@ -2,8 +2,6 @@
 
 零 npm 依赖的影刀 RPA 控制台服务端 + 单文件控制台前端，含触发器跨账号迁移功能。
 
-> 如果这个项目对你有帮助，欢迎点个 ⭐ Star，让更多有需要的人看到！[![GitHub stars](https://img.shields.io/github/stars/fwpsx/shadowbot-rpa-console?style=social)](https://github.com/fwpsx/shadowbot-rpa-console)
-
 ## 功能模块
 
 | 模块 | 说明 |
@@ -150,9 +148,3 @@ npm start
 ## License
 
 MIT
-
----
-
-## 支持
-
-如果这个项目对你有帮助，请帮忙点个 ⭐ Star，谢谢支持！[⭐ Star 这个仓库](https://github.com/fwpsx/shadowbot-rpa-console)
