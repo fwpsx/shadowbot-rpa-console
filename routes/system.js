@@ -8,7 +8,7 @@ const auth = require('../lib/auth');
 const { rest, restReady, cachedRest } = require('../lib/rest');
 const { cachedCli, isCacheable, clearCache } = require('../lib/cli');
 const { sendJson, sendFile, getLanIP, readBody } = require('../lib/utils');
-const { fetchAllGroups } = require('../lib/business');
+const { fetchAllGroups, checkAccountSwitch } = require('../lib/business');
 
 // 静态资源 MIME 映射
 const MIME = {
@@ -93,6 +93,7 @@ const routes = [
   // 系统状态汇总
   {
     method: 'GET', pattern: /^\/api\/system\/status$/, handler: async (req, res) => {
+      await checkAccountSwitch(); // 账号哨兵：手动切换影刀账号后清空旧缓存
       let account = null, triggerCount = null, appCount = null, health = null;
       if (await restReady()) {
         const [accR, appR, trigR, stateR] = await Promise.all([

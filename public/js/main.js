@@ -30,6 +30,6 @@ import { confirmModal } from './utils.js';
   updateLanAddr();
   await refreshAccount();
   navigate('dashboard');
-  // 定时刷新账号状态
-  setInterval(refreshAccount, 60000);
+  // 定时刷新账号状态（含账号哨兵：手动切换影刀账号后自动清缓存+刷新页面）
+  setInterval(refreshAccount, 15000);
 })();

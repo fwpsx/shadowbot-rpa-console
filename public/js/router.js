@@ -45,10 +45,18 @@ export function navigate(name) {
 }
 
 export async function refreshAccount() {
+  const prevUserId = App.account ? App.account.userId : null;
   try {
     const r = await cli(['auth', 'current']);
     App.account = r.data && r.data.loggedIn ? r.data : null;
   } catch { App.account = null; }
+  // 账号哨兵（前端层）：检测到影刀账号变化时，清缓存并刷新当前页面
+  const curUserId = App.account ? App.account.userId : null;
+  if (prevUserId !== null && curUserId !== null && prevUserId !== curUserId) {
+    try { await fetch('/api/cache/clear', { method: 'POST', headers: { 'X-Auth-Token': localStorage.getItem('rpa_auth_token') || '' } }); } catch (e) { /* 忽略 */ }
+    const cur = App.module;
+    if (cur) navigate(cur); // 重新渲染当前页（拉取新账号数据）
+  }
   const chip = $('#account-chip');
   if (App.account) {
     const name = App.account.displayName || App.account.userName || '未知';

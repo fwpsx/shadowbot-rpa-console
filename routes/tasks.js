@@ -8,12 +8,13 @@ const config = require('../config');
 const { rest, restReady } = require('../lib/rest');
 const { cachedCli } = require('../lib/cli');
 const { sendJson } = require('../lib/utils');
-const { normTask } = require('../lib/business');
+const { normTask, checkAccountSwitch } = require('../lib/business');
 
 const routes = [
   // 任务历史（REST 全量，前端本地分页）
   {
     method: 'GET', pattern: /^\/api\/tasks$/, handler: async (req, res) => {
+      await checkAccountSwitch(); // 账号哨兵：手动切换影刀账号后清空旧缓存
       if (await restReady()) {
         const r = await rest('/tasks?PageIndex=1&PageSize=100000');
         if (r.ok && r.data) {
