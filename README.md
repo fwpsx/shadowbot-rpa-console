@@ -23,7 +23,7 @@
 
 ```
 ├── server.js              # 服务入口（精简）
-├── config.js              # 配置加载（.env + 默认值）
+├── config.js              # 配置加载（.env + 默认值 + 路径自动探测）
 ├── .env.example           # 配置模板（脱敏，复制为 .env 使用）
 ├── lib/
 │   ├── utils.js           # 通用工具
@@ -51,8 +51,8 @@
 ### 前置条件
 
 - 影刀 RPA 客户端已安装并登录
-- `shadowbot.shell-cli.exe` 在 PATH 中（默认随客户端附带）
-- Node.js ≥ 16（无需任何 npm 依赖）
+- `shadowbot.shell-cli.exe` 可用（路径会自动探测，无需手动加入 PATH）
+- Node.js ≥ 16（无需任何 npm 依赖；`start.bat` 会自动探测 node，命令行方式需 node 在 PATH）
 
 ### 方式一：一键脚本（推荐，Windows）
 
@@ -71,19 +71,40 @@ npm start
 
 ## 配置
 
-复制 `.env.example` 为 `.env` 后按需修改（`.env` 已被 `.gitignore` 排除，不会提交）：
+影刀安装目录与 CLI 路径会**自动探测**（`where` 命令 → 常见安装目录扫描），因此绝大多数电脑**无需任何配置**即可运行。
+
+如需覆盖，复制 `.env.example` 为 `.env` 后按需修改（`.env` 已被 `.gitignore` 排除，不会提交）：
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `PORT` | `18923` | 监听端口 |
 | `HOST` | `0.0.0.0` | `0.0.0.0` 局域网可访问，`127.0.0.1` 仅本机 |
-| `CLI_EXE` | `shadowbot.shell-cli.exe` | CLI 可执行文件名 |
-| `CLI_CWD` | `D:\ShadowBot` | 影刀安装目录 |
-| `SCREENCAST_DIR` | `D:\ShadowBot\screencast` | 视频回放目录 |
+| `CLI_EXE` | 自动探测 | CLI 可执行文件（自动解析为安装目录下的绝对路径） |
+| `CLI_CWD` | 自动探测 | 影刀安装目录（自动定位，无需手填） |
+| `SCREENCAST_DIR` | 自动探测 | 视频回放目录（默认「安装目录\screencast」） |
 | `BACKUP_DIR` | 项目下 `backups/` | 备份存储目录 |
 | `REST_HOST` / `REST_PORT` | `127.0.0.1` / `42500` | 影刀本地 REST API |
 
-也可通过环境变量直接设置。
+也可通过环境变量直接设置。自动探测会扫描常见安装目录（`D:\ShadowBot`、`D:\soft\ShadowBot`、`C:\Program Files\ShadowBot` 等）；仅当影刀装在非常规位置时才需手动设置 `CLI_EXE` / `CLI_CWD`。
+
+### 自动探测失败怎么办
+
+自动探测按以下顺序查找影刀：`where shadowbot.shell-cli.exe`（系统 PATH）→ 常见安装目录（`D:\ShadowBot`、`D:\soft\ShadowBot`、`C:\Program Files\ShadowBot`、`C:\Program Files (x86)\ShadowBot`、`%LOCALAPPDATA%\ShadowBot`、`%APPDATA%\ShadowBot` 等）。
+
+若影刀装在**非常规位置**导致探测失败，启动时控制台会打印 `[警告] 未自动探测到影刀安装目录`。此时手动配置即可：
+
+1. 复制 `.env.example` 为 `.env`
+2. 在 `.env` 中取消注释并填写（以影刀装在 `E:\MyTools\ShadowBot` 为例）：
+
+```ini
+CLI_EXE=E:\MyTools\ShadowBot\shadowbot.shell-cli.exe
+CLI_CWD=E:\MyTools\ShadowBot
+SCREENCAST_DIR=E:\MyTools\ShadowBot\screencast
+```
+
+3. 重新启动服务
+
+> 如何找到影刀安装目录：右键桌面/开始菜单的影刀快捷方式 →「打开文件所在位置」，找到 `shadowbot.shell-cli.exe` 所在目录即可。
 
 ## 触发器迁移工作流
 
