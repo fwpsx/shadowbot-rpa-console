@@ -19,7 +19,7 @@ function ensureLogin() {
 async function rawFetch(path, opts) {
   opts = opts || {};
   const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
-  return fetch(path, Object.assign({}, opts, { headers }));
+  return fetch(path, Object.assign({ cache: 'no-store' }, opts, { headers }));
 }
 
 export async function api(path, opts) {
@@ -27,7 +27,7 @@ export async function api(path, opts) {
   const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
   if (AUTH_TOKEN) headers['X-Auth-Token'] = AUTH_TOKEN;
 
-  let r = await fetch(path, Object.assign({}, opts, { headers }));
+  let r = await fetch(path, Object.assign({ cache: 'no-store' }, opts, { headers }));
   if (r.status === 401) {
     // 需要登录：共享登录框，成功后重试一次
     const token = await ensureLogin();
@@ -35,7 +35,7 @@ export async function api(path, opts) {
     AUTH_TOKEN = token;
     try { localStorage.setItem('rpa_auth_token', token); } catch (e) { /* 忽略 */ }
     headers['X-Auth-Token'] = AUTH_TOKEN;
-    r = await fetch(path, Object.assign({}, opts, { headers }));
+    r = await fetch(path, Object.assign({ cache: 'no-store' }, opts, { headers }));
     if (r.status === 401) {
       // 登录态失效：清除并报错，避免死循环
       AUTH_TOKEN = '';
