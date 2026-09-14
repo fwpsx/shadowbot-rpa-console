@@ -6,6 +6,15 @@ import { el, modal } from './utils.js';
 
 let AUTH_TOKEN = (() => { try { return localStorage.getItem('rpa_auth_token') || ''; } catch (e) { return ''; } })();
 
+// 登录去重：并发请求同时 401 时共享同一个登录框，避免弹出多个
+let loginPromise = null;
+function ensureLogin() {
+  if (!loginPromise) {
+    loginPromise = promptLogin().finally(() => { loginPromise = null; });
+  }
+  return loginPromise;
+}
+
 // 不带鉴权的请求（登录接口自身使用，避免递归）
 async function rawFetch(path, opts) {
   opts = opts || {};
@@ -20,8 +29,8 @@ export async function api(path, opts) {
 
   let r = await fetch(path, Object.assign({}, opts, { headers }));
   if (r.status === 401) {
-    // 需要登录：弹窗输入账号密码，成功后重试一次
-    const token = await promptLogin();
+    // 需要登录：共享登录框，成功后重试一次
+    const token = await ensureLogin();
     if (!token) throw new Error('未授权：未登录');
     AUTH_TOKEN = token;
     try { localStorage.setItem('rpa_auth_token', token); } catch (e) { /* 忽略 */ }
@@ -77,4 +86,11 @@ export async function cli(args) {
     throw err;
   }
   return j;
+}
+
+// 退出登录：清除本地令牌并刷新页面（重新进入登录态）
+export function logout() {
+  AUTH_TOKEN = '';
+  try { localStorage.removeItem('rpa_auth_token'); } catch (e) { /* 忽略 */ }
+  location.reload();
 }

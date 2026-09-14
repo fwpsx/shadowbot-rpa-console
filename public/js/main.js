@@ -13,8 +13,19 @@ import './pages/extensions.js';
 import './pages/settings.js';
 
 import { buildNav, navigate, refreshAccount, updateLanAddr } from './router.js';
+import { logout } from './api.js';
+import { confirmModal } from './utils.js';
 
 (async function init() {
+  // 退出登录按钮
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      const ok = await confirmModal('退出登录', '确定要退出控制台登录吗？退出后需重新输入账号密码。', { okText: '退出' });
+      if (ok) logout();
+    });
+  }
+
   buildNav();
   updateLanAddr();
   await refreshAccount();
